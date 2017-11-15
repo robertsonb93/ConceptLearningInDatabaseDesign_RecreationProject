@@ -529,24 +529,24 @@ class QSet(object):
     def _genOption2(self):
         ret = list(13 *[None])#initial sizing
         ret[0] = self._genQuery1()
-        ret[1] += self._genQuery2()
-        ret[2] += self._genQuery3()
-        ret[3] += self._genQuery4()
-        ret[4] += self._genQuery5()
-        ret[5] += self._genQuery6()
-        ret[6] += self._genQuery7()
-        ret[7] += self._genQuery8()
-        ret[8] += self._genQuery9()
-        ret[9] += self._genQuery10()
-        ret[10] += self._genQuery11()
-        ret[11] += self._genQuery12()
-        ret[12] += self._genQuery13()
+        ret[1] = self._genQuery2()
+        ret[2] = self._genQuery3()
+        ret[3] = self._genQuery4()
+        ret[4] = self._genQuery5()
+        ret[5] = self._genQuery6()
+        ret[6] = self._genQuery7()
+        ret[7] = self._genQuery8()
+        ret[8] = self._genQuery9()
+        ret[9] = self._genQuery10()
+        ret[10] = self._genQuery11()
+        ret[11] = self._genQuery12()
+        ret[12] = self._genQuery13()
 
         actualRet = list(1001 *[None])
-        i =0
-        for j in range(77):
+        i=0
+        for j in range(self.numSamplesGenerate):
             for k in range(13):
-                actualRet[i] = ret[j][k]
+                actualRet[i] = ret[k][j]
                 i += 1
         return actualRet
 
