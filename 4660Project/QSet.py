@@ -21,13 +21,14 @@ class QSet:
     #ATM (atmno, num_trans, location, disabled_ time)
 
 
-    numSamplesGenerate = 77 #This is from the paper, as they said they had 1000 queries per set, with each query getting equal copies, ceil(1000/13) = 77, #note that 77*13 = 1001
+    #This is from the paper, as they said they had 1000 queries per set, with each query getting equal copies, ceil(1000/13) = 77, #note that 77*13 = 1001
+    numSamplesGenerate = 77 
     querySet = list()
 
     #Use to Generate the set, and then set the
-    #  1 : will provide us where the queries 1-13 have all the their queries in groups, ie, if there are 77 examples of query 1, then they are indices 1-77
-    #  2 : will provide us with cycles of queries 1-13, ie, indices 0, 13, 26,39.... will be query 1, while indices 1,14,27... = query 2
-    #  3 : randomly thrown in there.
+    #  1 :the queries 1-13 have all the their queries in groups, ie, if there are 77 examples of query 1, then they are indices 0-76
+    #  2 :provide with cycles of queries 1-13, ie, indices 0, 13, 26,39.... will be query 1, while indices 1,14,27... = query 2
+    #  3 :randomly thrown in there.
     def GenerateSet(self,option):
         if (option == 1):
             self.querySet = _genOption1()
@@ -575,3 +576,5 @@ class QSet:
             op = ""
             value = "?"
             featureVec += [attr,op,value]
+            ret += featureVec
+        return ret
