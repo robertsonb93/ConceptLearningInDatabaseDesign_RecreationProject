@@ -7,11 +7,24 @@ class COBWEBTree(object):
 
     #The core of running cobweb, https://en.wikipedia.org/wiki/Cobweb_(clustering)
     def cobweb(self,root,featureVector):
-        if not len(root.children): #If dont have any children (aka a leaf)
-            root.children.append(copy(root)) #we create a child in our exact likeness
-            root.newcategory(featureVector) #Add a new child that uses this feature vectors values
-            root.insert(featureVector)  #Update this roots information
-        else:
+        if not len(root.children): #If dont have any children (aka a leaf) #This is BASE CASE
+
+            if root.featureVectorsMatch(featureVector): #if the featureVector is an exact match for the leaf node
+                root.insert(featureVector)#Then just update the values for this node
+
+            else: #else its not a match
+                newParent = root.__makeCopy__() #create a clone of root
+                newParent.insert(featureVector) #Modify roots clone
+                root.parent = newParent #root now the child of roots modified clone
+                newParent.newcategory(featureVector) #create a sibling leaf for new novel featureVector
+
+                if not newParent.parent == None: #True : newParent is not supposed to be the root
+                    newParent.parent.children.remove(root) #remove root from its ex-parent
+                    newParent.parent.children.append(newParent) #Tell the newParent that is has a new child
+                else:
+                    self.root = newParent #If there was no parent, newParent is the new root to the tree
+     
+        else:#This root is not a leaf node.
             root.insert(featureVector) #update this roots statistics
             bestCU = 0
             bestChild = root.children[0]
@@ -26,9 +39,9 @@ class COBWEBTree(object):
             newCatCu = root.getCUNewCategory(featureVector) #Get the CU for if we just make a new child from the record
             mergeCU = root.getMergeCU(bestChild,bestChild2)
             splitCU = root.getSplitCU(bestChild)
-            passOnCU = root.getCobwebCU(bestChild,featureVector)
+            #passOnCU = root.getCobwebCU(bestChild,featureVector) #this is related to CUInserted for the best child
 
-            d = {"newCatCu" : newCatCu, "mergeCU" : mergeCU, "splitCU" : splitCU, "passOnCU" : passOnCU} #Create a dictionary with the operations and their values
+            d = {"newCatCu" : newCatCu, "mergeCU" : mergeCU, "splitCU" : splitCU, "passOnCU" : bestCU} #Create a dictionary with the operations and their values
             maxVar = max(d,key=d.get)#find the key with the max value
            
             if maxVar == "newCatCU":
@@ -62,6 +75,38 @@ class COBWEBNode(object):
         self.parent = None
         self.children = []
         self.tree = None
+
+    #utility function to create a duplicate of the given node
+    def __makeCopy__(self):        
+        temp = COBWEBNode()
+        temp.tree = self.tree
+        temp.parent = self.parent
+        temp.vectorCount = self.vectorCount
+        for feature in self.featureCount:
+            temp.featureCount[feature] = self.featureCount[feature]
+
+        return temp
+
+    def __incrementFeatures__(self,featureVector):
+        #TBD
+        self
+
+    #Determine if features in the feature vector are the same as the features in self node
+    def featureVectorsMatch(self,featureVector):
+        fvSet = set()
+        for atom in featureVector:
+            for feature in atom:
+                fvSet.add(feature) #Collect a set of all the values in the featureVector
+
+        nodeFvSet = set()
+        for feature in self.featureCount:
+            nodeFvSet.add(feature)
+
+        for feature in fvSet:
+            if feature not in nodeFvSet:
+                return False
+
+        return True
 
 
     #Calculates the category utility, https://en.wikipedia.org/wiki/Category_utility
@@ -102,7 +147,8 @@ class COBWEBNode(object):
         CU = sum / len(self.children)
         return CU
 
-    #used to declare that a new node should be created in the tree, (using the feature vector as the feature values)           
+    #used to declare that a new node should be created in the tree, (using the feature vector as the feature values)
+    ##Returns the newly created child node           
     def newcategory(self,featureVector):
         newChild = COBWEBNode()
         newChild.vectorCount = 1
@@ -114,6 +160,8 @@ class COBWEBNode(object):
         newChild.tree = self.tree
 
         self.children.append(newChild)
+
+        return newChild
 
     #used to show that a feature vector has been seen by the node
     #updates the number of unique features that this node has seen and updates the feature counts it has seen
@@ -138,11 +186,10 @@ class COBWEBNode(object):
     #wikipedia doesnt describe the merge making the two children the children of the new node, but the paper and the online example show different
     #https://github.com/cmaclell/concept_formation/blob/master/concept_formation/cobweb.py
     #http://axon.cs.byu.edu/~martinez/classes/678/Papers/Fisher_Cobweb.pdf
-
+    ##Returns the newly created child node
     def merge(self,bestChild,bestChild2):
         #From the paper, merging nodes is creating a new node, and summing the attribute-value counts of the nodes being merged,
         # the original nodes are made children of the newly created node. pg.151,152
-
         newNode = COBWEBNode()
         newNode.parent = self
         newNode.tree = self.tree
@@ -160,8 +207,7 @@ class COBWEBNode(object):
         
         newNode.vectorCount = len(newNode.featureCount)#Our initial unique features seen is the len of the features we have in our dictionary
                    
-
-        #The merging nodes are made the children of the new node
+        #The merging nodes are made into children of the new node
         bestChild.parent = newNode
         bestChild2.parent = newNode
         newNode.children.append(bestChild)
@@ -172,5 +218,86 @@ class COBWEBNode(object):
         self.children.remove(bestChild2)
         self.children.append(newNode)
 
+        return newNode
+        
+    #splitting is when a nodeA is removed, where the children of nodeA are then reparented to the parent of nodeA
+    #its simple, remove the nodeA from its parent (self), and move all of nodeA's children to the parent (root)
+    def split(self,bestChild):
+        self.children.remove(bestChild)
+        for child in bestChild.children:
+            child.parent = self
+            child.tree = self.tree
+            self.children.append(child)
 
 
+
+    #Get what the category_utility would be if we gave the featureVector to our child
+    def getCUInserted(self,child,featureVector):
+        temp = self.__makeCopy__()
+        temp.children.remove(child) #We dont want to see the reference of the actual child 
+
+        tempChild = child.__makeCopy__()
+        tempChild.parent = temp  # I dont think we need to set who the parent actually is. TODO 
+        tempChild.tree = temp.tree  #I dont think setting the parent is needed. TODO      
+
+        temp.children.append(tempChild)
+        tempChild.insert(featureVector)
+
+        cu = temp.categoryUtility()
+        return cu
+
+
+    #Get the CU if we just make a new child from the featureVector
+    def getCUNewCategory(self,featureVector):
+        temp = self.__makeCopy__()
+
+        tempChild = COBWEBNode()
+        tempChild.parent = temp  # I dont think we need to set who the parent actually is. TODO 
+        tempChild.tree = temp.tree #I dont think setting the parent is needed. TODO       
+        tempChild.insert(featureVector)
+
+        temp.children.append(tempChild)
+
+        cu = temp.categoryUtility()
+        return cu
+
+
+    #Get the category_utility for the merge of the 2 best children
+    def getMergeCU(self,bestChild,bestChild2):
+         #We will create temps of the bestchildren, and the the root (self)
+
+         #Create out self copy, but remove the bestChildren from its children, they will be re added as temps
+         tempSelf = self.__makeCopy__()
+         tempSelf.children.remove(bestChild)
+         tempSelf.children.remove(bestChild2)
+
+         #Create the temporary best children, but set the parent to the tempself (would have been self)
+         tempBC = bestChild.__makeCopy__()
+         tempBC.parent = tempSelf #I dont think setting the parent is needed. TODO
+         tempBC.tree = tempSelf.tree #I dont think setting the tree is needed. TODO
+
+         tempBC2 = bestChild2.__makeCopy__()
+         tempBC2.parent = tempSelf #I dont think setting the parent is needed. TODO
+         tempBC2.tree = tempSelf.tree #I dont think setting the tree is needed. TODO
+
+         tempSelf.children.append(tempBC)
+         tempSelf.children.append(tempBC2)
+
+         #Merge the temp nodes together,so we can calculate the category utility on them.
+         tempSelf.merge(tempBC,tempBC2)
+         
+         cu = tempSelf.categoryUtility()
+         return cu
+
+    #Get the category_utility for splitting the best child
+    def getSplitCU(self,bestChild):
+
+         #create a temp node as a copy of our current, we will then avoid adding the best child to it, but will add the bestChild children
+         temp = self.__makeCopy__()
+         temp.children.remove(bestChild)#Remove the best child from the temps children
+         
+         for child in bestChild.children:
+                 temp.children.append(child) #We dont need to set the childrens parent for this split. as it isnt used in the category utility
+
+         cu = temp.categoryUtility()#WE have created our dummy cluster (root node to leafs, now lets calculate the categoryUtility of it)
+         return cu

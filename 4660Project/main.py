@@ -1,5 +1,5 @@
 from QSet import *
-
+from COBWEB import *
 
 #Create 12 sets of 1001 sample queries, each query is a list (feature vector) where each sub-list is an atom (attribute,op,value)
 def CreateSets():
@@ -18,4 +18,9 @@ def CreateSets():
     return ret
 
 qsets = CreateSets()
+
+
+cobwebTree = COBWEBTree()
+cobwebTree.cobweb(cobwebTree.root,qsets[0][0])
+
 print("hello")
