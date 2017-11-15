@@ -4,9 +4,8 @@
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>0571f432-c7f0-407c-bb70-1a8e5718091a</ProjectGuid>
     <ProjectHome>.</ProjectHome>
-    <StartupFile>_4660Project.py</StartupFile>
-    <SearchPath>
-    </SearchPath>
+    <StartupFile>main.py</StartupFile>
+    <SearchPath>..\4660Project;..\..\4660Project;__pycache__</SearchPath>
     <WorkingDirectory>.</WorkingDirectory>
     <OutputPath>.</OutputPath>
     <Name>4660Project</Name>
@@ -21,10 +20,11 @@
     <EnableUnmanagedDebugging>false</EnableUnmanagedDebugging>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="QSet.py">
+    <Compile Include="QSet.py" />
+    <Compile Include="__init__.py">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="_4660Project.py" />
+    <Compile Include="main.py" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\Python Tools\Microsoft.PythonTools.targets" />
   <!-- Uncomment the CoreCompile target to enable the Build command in
