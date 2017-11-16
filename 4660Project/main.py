@@ -23,22 +23,26 @@ reformattedSet = list()
 #we have 2 issues, I believe that feature vectors for cobweb need all be the same length. any length difference needs to be filled with unknown. But were do they belong?
 #see page 281 part B
 for qset in qsets: 
-    subset = list()
-    for featureVec in qset:
-        newFV = list()
-        for atom in featureVec:
-            newstr = ''.join(filter(lambda ch: ch not in " \",\'[]", repr(atom)))
-            newFV.append(newstr) #WE are converting all the atoms (a list) to a string representation, and removing certain characters
-        subset.append(newFV)
-    reformattedSet.append(subset)
+    newAtomVec = list()
+    for atomVec in qset:
+        newAtom = list()
+        for atom in atomVec: #We are turning each atom for just being values, to being featureType,value pairs, Because cobweb is fun.
+            first = ("attr",atom[0])
+            second = ("op",atom[1])
+            third = ("value",atom[2])
+            newAtom = [first,second,third]
+
+        newAtomVec.append(newAtom) 
+
+    reformattedSet.append(newAtomVec) 
 
 
 
 cobwebTree = COBWEBTree()
-for fv in reformattedSet[0]:
-    cobwebTree.cobweb(cobwebTree.root,fv)
+for atom in reformattedSet[11]:
+    cobwebTree.cobweb(cobwebTree.root,atom)
     treeprint = (cobwebTree.root.pretty_print(0))
-    #print(treeprint)
+    print(treeprint)
 
 
 print("hello")

@@ -72,9 +72,14 @@ class QSet(object):
 
             #Find transactions matching the account number , a Join
             attribute = "tactno"
-            operation = ""
+            operation = "="
             value = "actno"
             featureVec +=[[attribute,operation,value]]
+            attribute = "actno"
+            operation ="="
+            value = "tactno"
+            featureVec +=[[attribute,operation,value]]
+
             ret += [featureVec]
 
         return ret
