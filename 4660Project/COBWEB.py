@@ -1,3 +1,5 @@
+from collections import OrderedDict
+
 class COBWEBTree(object):
    #Is the actual classfication tree
     def __init__(self):
@@ -8,52 +10,81 @@ class COBWEBTree(object):
     #The core of running cobweb, https://en.wikipedia.org/wiki/Cobweb_(clustering)
     def cobweb(self,root,featureVector):
         if not len(root.children): #If dont have any children (aka a leaf) #This is BASE CASE
-
-            if root.featureVectorsMatch(featureVector): #if the featureVector is an exact match for the leaf node
+            if root.featureVectorsMatch(featureVector) or root.vectorCount == 0: #if the featureVector is an exact match for the leaf node, or it is the first time entering 
                 root.insert(featureVector)#Then just update the values for this node
+                return
 
-            else: #else its not a match
-                newParent = root.__makeCopy__() #create a clone of root
+            else: #else its not a match or the first entry
+                newParent = root.__makeCopy__() #create a clone of root, this would be a bug if we didnt check len of children first
                 newParent.insert(featureVector) #Modify roots clone
                 root.parent = newParent #root now the child of roots modified clone
+                newParent.children.append(root)
                 newParent.newcategory(featureVector) #create a sibling leaf for new novel featureVector
 
-                if not newParent.parent == None: #True : newParent is not supposed to be the root
+                if not(newParent.parent == None): #True : newParent is an internal node (not tree root)
                     newParent.parent.children.remove(root) #remove root from its ex-parent
                     newParent.parent.children.append(newParent) #Tell the newParent that is has a new child
                 else:
                     self.root = newParent #If there was no parent, newParent is the new root to the tree
+
+                print(len(root.children))
+                if len(newParent.children) ==1:
+                    print("we be broken here")
+
+            return
      
         else:#This root is not a leaf node.
-            root.insert(featureVector) #update this roots statistics
+            
             bestCU = 0
+            bestCU2 = 0
             bestChild = root.children[0]
-            bestChild2 = root.children[1]
+            try:
+                bestChild2 = root.children[1]
+            except IndexError:
+                print("for debug")
 
             for child in root.children:#Find the children with the best CU if the feature vector went to them
                 cu = root.getCUInserted(child,featureVector)
                 if (bestCU < cu):
+                    bestCU2 = bestCU
                     bestChild2 = bestChild
+                    bestCU = cu
                     bestChild = child
+                elif (bestCU2 < cu):
+                    bestCU2 = cu
+                    bestChild2 = child
+
             #Now we need to find what the CU would be for three different actions, and pick the best action
             newCatCu = root.getCUNewCategory(featureVector) #Get the CU for if we just make a new child from the record
             mergeCU = root.getMergeCU(bestChild,bestChild2)
             splitCU = root.getSplitCU(bestChild)
             #passOnCU = root.getCobwebCU(bestChild,featureVector) #this is related to CUInserted for the best child
 
-            d = {"newCatCu" : newCatCu, "mergeCU" : mergeCU, "splitCU" : splitCU, "passOnCU" : bestCU} #Create a dictionary with the operations and their values
+            d = {"newCatCU" : newCatCu, "mergeCU" : mergeCU, "splitCU" : splitCU, "passOnCU" : bestCU} #Create a dictionary with the operations and their values
             maxVar = max(d,key=d.get)#find the key with the max value
            
             if maxVar == "newCatCU":
-                root.newcategory(featureVector)
+                root.insert(featureVector) #update this roots statistics
+                newchild = root.newcategory(featureVector)
+                if len(newchild.children) == 1:
+                    print("broken1")
             elif maxVar == "mergeCU":
-                root.merge(bestChild,bestChild2)
-                cobweb(root,featureVector)
+                root.insert(featureVector) #update this roots statistics
+                newnode = root.merge(bestChild,bestChild2)
+                if len(newchild.children) == 1:
+                    print("broken1")
+                self.cobweb(newnode,featureVector)# we need to recurse to evaluate our modifed tree
             elif maxVar == "splitCU":
-                root.split(bestChild)
-                cobweb(root,featureVector)
+                root.insert(featureVector) #update this roots statistics
+                if len(root.children) == 1:
+                    print("broken1")
+                root.split(bestChild) #TODO: What if we are trying split a leaf that has no children, and we only have 2 children on the root, (then we cant get a 2 best child)
+                if len(root.children) == 1:
+                    print("broken1")
+                #self.cobweb(root,featureVector)# we need to recurse to evaluate our modifed tree
             elif maxVar == "passOnCU":
-                cobweb(bestChild,featureVector)
+                root.insert(featureVector) #update this roots statistics
+                self.cobweb(bestChild,featureVector)
             else:
                 print(("SomeThing wen wrong and maxVar was not determined to match : maxVar = " + maxVar))
 
@@ -71,7 +102,7 @@ class COBWEBNode(object):
         #List of all the children
         #The tree the node belongs to
         self.vectorCount = 0
-        self.featureCount = dict() #each element will be a pair of feature and count
+        self.featureCount = OrderedDict() #each element will be a pair of feature and count
         self.parent = None
         self.children = []
         self.tree = None
@@ -85,27 +116,23 @@ class COBWEBNode(object):
         for feature in self.featureCount:
             temp.featureCount[feature] = self.featureCount[feature]
 
+        for child in self.children:
+            temp.children.append(child)
+
         return temp
 
+    #i thought I might need this, but i believe it would do the same function as insert does
     def __incrementFeatures__(self,featureVector):
         #TBD
         self
 
     #Determine if features in the feature vector are the same as the features in self node
     def featureVectorsMatch(self,featureVector):
-        fvSet = set()
-        for atom in featureVector:
-            for feature in atom:
-                fvSet.add(feature) #Collect a set of all the values in the featureVector
-
-        nodeFvSet = set()
-        for feature in self.featureCount:
-            nodeFvSet.add(feature)
-
-        for feature in fvSet:
-            if feature not in nodeFvSet:
-                return False
-
+        for fv in featureVector:
+            for nfv in self.featureCount.keys():
+                if(fv != nfv):
+                    print(("Doesnt match "+fv +" != " + nfv))
+                    return False           
         return True
 
 
@@ -129,14 +156,16 @@ class COBWEBNode(object):
         for child in self.children:
             partialSum = 0
             for feature in child.featureCount: #remember that feature in this is a pair of the feature and the count for it
-                partialSum += (feature.value / child.vectorCount)**2
+                count  = child.featureCount[feature]
+                partialSum += (count / child.vectorCount)**2
             
             conditionalProbabilities.append(partialSum) # a list of all our conditional probabilities for each child
 
         #Now step three is the repeat the same as above, but for the self node, this is the selfs expected correct guess, or unconditional probability term
         unconditional_probability = 0
         for feature in self.featureCount:
-            unconditional_probability += (feature.value / self.vectorCount)**2
+            count  = self.featureCount[feature]
+            unconditional_probability += (count / self.vectorCount)**2
         
         #step Four is to finish the first summation, ands combine the terms,
         #sum += step1 * (step2 - step3)
@@ -152,9 +181,8 @@ class COBWEBNode(object):
     def newcategory(self,featureVector):
         newChild = COBWEBNode()
         newChild.vectorCount = 1
-        for atom in featureVector:
-            for feature in atom:
-                newChild.featureCount[feature] = 1 
+        for feature in featureVector:
+            newChild.featureCount[feature] = 1 
 
         newChild.parent = self
         newChild.tree = self.tree
@@ -166,18 +194,16 @@ class COBWEBNode(object):
     #used to show that a feature vector has been seen by the node
     #updates the number of unique features that this node has seen and updates the feature counts it has seen
     def insert(self,featureVector):
-        
-        for atom in featureVector:            
-            for feature in atom:
-                isunique = False
-                if feature in self.featureCount:
-                    self.featureCount[feature] += 1
-                else:
-                    isunique = True #One of the features in the atom was different thus it is a novel atom to see
-                    self.featureCount[feature] = 1
+        isunique = False
+        for feature in featureVector:                       
+            if feature in self.featureCount:
+                self.featureCount[feature] += 1
+            else:
+                isunique = True #One of the features in the atom was different thus it is a novel atom to see
+                self.featureCount[feature] = 1
             
-            if isunique: #For each atom, check if it is novel, if it is then insert it
-                self.vectorCount += 1
+        if isunique: #For the feature vector, check if it is novel, if it is then insert it
+            self.vectorCount += 1
 
     #It has been determined the CU for having these two child nodes would be improved if they became the same node
     #Merging two nodes means replacing them by a node whose children is the union of the original nodes' sets of children
@@ -301,3 +327,27 @@ class COBWEBNode(object):
 
          cu = temp.categoryUtility()#WE have created our dummy cluster (root node to leafs, now lets calculate the categoryUtility of it)
          return cu
+
+
+
+
+    #Stole this from https://github.com/cmaclell/concept_formation/blob/master/concept_formation/cobweb.py
+    def pretty_print(self, depth=0):
+        """
+        Print the categorization tree
+        The string formatting inserts tab characters to align child nodes of
+        the same depth.
+        :param depth: The current depth in the print, intended to be called
+                        recursively
+        :type depth: int
+        :return: a formated string displaying the tree and its children
+        :rtype: str
+        """
+
+        ret = str(('\t' * depth) + "|-" + str(self.featureCount) + ":" +
+                    str(self.vectorCount) + '\n')
+
+        for c in self.children:
+            ret += c.pretty_print(depth+1)
+
+        return ret
