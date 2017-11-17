@@ -10,69 +10,77 @@ class COBWEBTree(object):
 
 
     #The core of running cobweb, https://en.wikipedia.org/wiki/Cobweb_(clustering)
-    def cobweb(self,root,featureVector):
-        if not len(root.children): #If dont have any children (aka a leaf) #This is BASE CASE
-            if root.featureVectorsMatch(featureVector) or root.vectorCount == 0: #if the featureVector is an exact match for the leaf node, or it is the first time entering 
-                root.insert(featureVector)#Then just update the values for this node
+    def cobweb(self,featureVector):
+        root = self.root
+        while root:
+            if not len(root.children): #If dont have any children (aka a leaf) #This is BASE CASE
+                if root.featureVectorsMatch(featureVector) or root.vectorCount == 0: #if the featureVector is an exact match for the leaf node, or it is the first time entering 
+                    root.insert(featureVector)#Then just update the values for this node
                 
 
-            else: #else its not a match or the first entry
-                newParent = root.__makeCopy__() #create a clone of root, this would be a bug if we didnt check len of children first
-                newParent.insert(featureVector) #Modify roots clone
-                root.parent = newParent #root now the child of roots modified clone
-                newParent.children.append(root)
-                newParent.newcategory(featureVector) #create a sibling leaf for new novel featureVector
+                else: #else its not a match or the first entry
+                    newParent = root.__makeCopy__() #create a clone of root, this would be a bug if we didnt check len of children first
+                    newParent.insert(featureVector) #Modify roots clone
+                    root.parent = newParent #root now the child of roots modified clone
+                    newParent.children.append(root)
+                    newParent.newcategory(featureVector) #create a sibling leaf for new novel featureVector
 
-                if not(newParent.parent == None): #True : newParent is an internal node (not tree root)
-                    newParent.parent.children.remove(root) #remove root from its ex-parent
-                    newParent.parent.children.append(newParent) #Tell the newParent that is has a new child
-                else:
-                    self.root = newParent #If there was no parent, newParent is the new root to the tree
+                    if not(newParent.parent == None): #True : newParent is an internal node (not tree root)
+                        newParent.parent.children.remove(root) #remove root from its ex-parent
+                        newParent.parent.children.append(newParent) #Tell the newParent that is has a new child
+                    else:
+                        self.root = newParent #If there was no parent, newParent is the new root to the tree
+
+                break;
      
-        else:#This root is not a leaf node.
-            root.insert(featureVector) #update this roots statistics
-            notSingleChild = len(root.children) > 1
+            else:#This root is not a leaf node.
+                root.insert(featureVector) #update this roots statistics
+                notSingleChild = len(root.children) > 1
                     
-            bestChild = root.children[0]
-            if notSingleChild: #Only enter if we arent eh only child
-                bestChild2 = root.children[1]
-                bestCU = 0 
-                bestCU2 = 0
-                for child in root.children:#Find the children with the best CU if the feature vector went to them
-                    cu = root.getCUInserted(child,featureVector)
-                    if (bestCU < cu):
-                        bestCU2 = bestCU
-                        bestChild2 = bestChild
-                        bestCU = cu
-                        bestChild = child
-                    elif (bestCU2 < cu):
-                        bestCU2 = cu
-                        bestChild2 = child
-                mergeCU = root.getMergeCU(bestChild,bestChild2)
-            else:#We have only a single child, so cant check for merging, and the best child CU is the only child CU
-                mergeCU = 0
-                bestCU = root.getCUInserted(bestChild,featureVector)
+                bestChild = root.children[0]
+                if notSingleChild: #Only enter if we arent eh only child
+                    bestChild2 = root.children[1]
+                    bestCU = 0 
+                    bestCU2 = 0
+                    for child in root.children:#Find the children with the best CU if the feature vector went to them
+                        cu = root.getCUInserted(child,featureVector)
+                        if (bestCU < cu):
+                            bestCU2 = bestCU
+                            bestChild2 = bestChild
+                            bestCU = cu
+                            bestChild = child
+                        elif (bestCU2 < cu):
+                            bestCU2 = cu
+                            bestChild2 = child
+                    mergeCU = root.getMergeCU(bestChild,bestChild2)
 
-            #Now we need to find what the CU would be for three different actions, and pick the best action
-            newCatCu = root.getCUNewCategory(featureVector) #Get the CU for if we just make a new child from the recor            
-            splitCU = root.getSplitCU(bestChild)
-            #passOnCU = root.getCobwebCU(bestChild,featureVector) #this is related to CUInserted for the best child
+                    break#We have done all we can with this new feature vector
 
-            d = {"newCatCU" : newCatCu, "mergeCU" : mergeCU, "splitCU" : splitCU, "passOnCU" : bestCU} #Create a dictionary with the operations and their values
-            maxVar = max(d,key=d.get)#find the key with the max value
+                else:#We have only a single child, so cant check for merging, and the best child CU is the only child CU
+                    mergeCU = 0
+                    bestCU = root.getCUInserted(bestChild,featureVector)
+
+                #Now we need to find what the CU would be for three different actions, and pick the best action
+                newCatCu = root.getCUNewCategory(featureVector) #Get the CU for if we just make a new child from the recor            
+                splitCU = root.getSplitCU(bestChild)
+                #passOnCU = root.getCobwebCU(bestChild,featureVector) #this is related to CUInserted for the best child
+
+                d = {"newCatCU" : newCatCu, "mergeCU" : mergeCU, "splitCU" : splitCU, "passOnCU" : bestCU} #Create a dictionary with the operations and their values
+                maxVar = max(d,key=d.get)#find the key with the max value
            
-            if maxVar == "newCatCU":
-                newchild = root.newcategory(featureVector)
-            elif maxVar == "mergeCU":
-                newnode = root.merge(bestChild,bestChild2)
-                self.cobweb(newnode,featureVector)# we need to recurse to evaluate our modifed tree
-            elif maxVar == "splitCU":               
-                root.split(bestChild) 
-                #self.cobweb(root,featureVector)# we need to recurse to evaluate our modifed tree
-            elif maxVar == "passOnCU":
-                self.cobweb(bestChild,featureVector)
-            else:
-                print(("SomeThing wen wrong and maxVar was not determined to match : maxVar = " + maxVar))
+                if maxVar == "newCatCU":
+                    newchild = root.newcategory(featureVector)
+                    break; #we created a new child for this feature vector, so we dont need to do anything further with it
+                elif maxVar == "mergeCU":
+                    newnode = root.merge(bestChild,bestChild2)
+                    root = newnode #We will then restart the while loop with this as the new root
+                elif maxVar == "splitCU":               
+                    root.split(bestChild) # we will restart the loop with the same root                   
+                elif maxVar == "passOnCU":
+                    root = bestChild # we will restart the loop with bestchild as root, and eval if their is a better fit in best child's children
+                else:
+                    print(("SomeThing wen wrong and maxVar was not determined to match : maxVar = " + maxVar))
+                    break;
 
 
 
@@ -97,7 +105,7 @@ class COBWEBNode(object):
     #utility function to create a duplicate of the given node
     def __makeCopy__(self):        
         temp = COBWEBNode()
-        temp.category = (("Temp_"+self.category))
+        temp.category = (("copy_"+self.category))
         temp.tree = self.tree
         temp.parent = self.parent
         temp.vectorCount = self.vectorCount

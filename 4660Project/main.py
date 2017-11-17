@@ -48,7 +48,7 @@ for qset in qsets:
 
 cobwebTree = COBWEBTree()
 for atom in reformattedSet[11]:
-    cobwebTree.cobweb(cobwebTree.root,atom)
+    cobwebTree.cobweb(atom)
     treeprint = (cobwebTree.root.pretty_print(0))
    #print(treeprint)
 
@@ -149,7 +149,7 @@ layout = dict(title= 'Tree with Reingold-Tilford Layout',
 data=go.Data([lines, dots])
 fig=dict(data=data, layout=layout)
 fig['layout'].update(annotations=make_annotations(position, v_label))
-plotly.offline.plot(fig, filename='Tree-Reingold-Tilf')
+plotly.offline.plot(fig, filename='Tree-Reingold-Tilf.html')
 
 
 print("hello")
