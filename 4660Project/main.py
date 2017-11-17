@@ -25,6 +25,7 @@ def makeTreeGraphCOBWEB(cobwebTree):
               for child in curr.children:
                     vertices.append(child)
                     nr_vertices +=1
+                    child.category = child.category + child.nameFromInfo()
                     v_label.append(child.category)
 
     G = Graph.Tree(nr_vertices, 3)
@@ -155,7 +156,7 @@ for qset in qsets:
 
 
 cobwebTree = COBWEBTree()
-for atom in reformattedSet[11]:
+for atom in reformattedSet[0]:
     cobwebTree.cobweb(atom)
     treeprint = (cobwebTree.root.pretty_print(0))
     print(treeprint)

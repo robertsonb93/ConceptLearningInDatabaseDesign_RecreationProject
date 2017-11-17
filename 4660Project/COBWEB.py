@@ -13,6 +13,7 @@ class COBWEBTree(object):
     def cobweb(self,featureVector):
         root = self.root
         while root:
+
             if not len(root.children): #If dont have any children (aka a leaf) #This is BASE CASE
                 if root.featureVectorsMatch(featureVector) or root.vectorCount == 0: #if the featureVector is an exact match for the leaf node, or it is the first time entering 
                     root.insert(featureVector)#Then just update the values for this node
@@ -37,10 +38,9 @@ class COBWEBTree(object):
                 
                 notSingleChild = len(root.children) > 1                  
                 bestChild = root.children[0]
-
                 if notSingleChild: #Only enter if we arent the only child
                     bestChild2 = root.children[1]
-                    bestCU = 0 
+                    bestCU = 0 # we can use zero, because a negative value implies that the child has seen something the parent hasnt, which isnt possible (without bugs)
                     bestCU2 = 0
                     for child in root.children:#Find the children with the best CU if the feature vector went to them
                         cu = root.getCUInserted(child,featureVector)
@@ -52,6 +52,8 @@ class COBWEBTree(object):
                         elif (bestCU2 < cu):
                             bestCU2 = cu
                             bestChild2 = child
+                    if(bestChild == bestChild2):
+                        print("Dupolicate children")
                     mergeCU = root.getMergeCU(bestChild,bestChild2)
 
                 else:#We have only a single child, so cant check for merging, and the best child CU is the only child CU
@@ -65,7 +67,7 @@ class COBWEBTree(object):
 
                 d = {"newCatCU" : newCatCu, "mergeCU" : mergeCU, "splitCU" : splitCU, "passOnCU" : bestCU} #Create a dictionary with the operations and their values
                 maxVar = max(d,key=d.get)#find the key with the max value
-           
+
                 if maxVar == "newCatCU":
                     root.insert(featureVector) #update this roots statistics
                     newchild = root.newcategory(featureVector)
@@ -96,12 +98,20 @@ class COBWEBNode(object):
         #Who the parent is
         #List of all the children
         #The tree the node belongs to
-        self.category = ""
+        self.category = "Unset"
         self.vectorCount = 0
         self.featureCount = defaultdict(dict) #each key is a feature title(ie, attribute, op, value), then a second dict exists inside using the provided value, then a count of its occurance
         self.parent = None
         self.children = []
         self.tree = None
+
+    def nameFromInfo(self):
+        name = "Features: \n"
+        for attr in self.featureCount:
+            for val in self.featureCount[attr]:
+                name += str(val) + "\n"
+        name += "Vectors Seen: " + str(self.vectorCount)
+        return name
 
     #utility function to create a duplicate of the given node
     def __makeCopy__(self):        
@@ -188,7 +198,7 @@ class COBWEBNode(object):
         newChild.tree = self.tree
 
         self.children.append(newChild)
-        newChild.category = ((self.category) + str(self.children.index(newChild)))
+        newChild.category = "NewCategory\n"
 
         return newChild
 
@@ -217,7 +227,7 @@ class COBWEBNode(object):
         #From the paper, merging nodes is creating a new node, and summing the attribute-value counts of the nodes being merged,
         # the original nodes are made children of the newly created node. pg.151,152
         newNode = COBWEBNode()
-        newNode.category = ""
+        newNode.category = "Merged\n"
         newNode.parent = self
         newNode.tree = self.tree
 
