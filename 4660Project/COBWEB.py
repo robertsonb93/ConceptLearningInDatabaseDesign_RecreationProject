@@ -118,11 +118,6 @@ class COBWEBNode(object):
 
         return temp
 
-    #i thought I might need this, but i believe it would do the same function as insert does
-    def __incrementFeatures__(self,featureVector):
-        #TBD
-        self
-
     #Determine if features in the feature vector are the same as the features in self node
     def featureVectorsMatch(self,featureVector):
         for a,b in featureVector: #a Feature vec is a single atom, and each atom contains a list of pairs
@@ -214,8 +209,6 @@ class COBWEBNode(object):
     #It has been determined the CU for having these two child nodes would be improved if they became the same node
     #Merging two nodes means replacing them by a node whose children is the union of the original nodes' sets of children
     # and which summarizes the attribute-value distributions of all objects classified under them.
-
-    #wikipedia doesnt describe the merge making the two children the children of the new node, but the paper and the online example show different
     #https://github.com/cmaclell/concept_formation/blob/master/concept_formation/cobweb.py
     #http://axon.cs.byu.edu/~martinez/classes/678/Papers/Fisher_Cobweb.pdf
     ##Returns the newly created child node
