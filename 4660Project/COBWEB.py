@@ -4,6 +4,8 @@ class COBWEBTree(object):
    #Is the actual classfication tree
     def __init__(self):
         self.root = COBWEBNode() #When created, we will create our first node.
+        self.root.category = "ROOT"
+        self.current = self.root
         self.root.tree = self
 
 
@@ -85,6 +87,7 @@ class COBWEBNode(object):
         #Who the parent is
         #List of all the children
         #The tree the node belongs to
+        self.category = ""
         self.vectorCount = 0
         self.featureCount = defaultdict(dict) #each key is a feature title(ie, attribute, op, value), then a second dict exists inside using the provided value, then a count of its occurance
         self.parent = None
@@ -94,6 +97,7 @@ class COBWEBNode(object):
     #utility function to create a duplicate of the given node
     def __makeCopy__(self):        
         temp = COBWEBNode()
+        temp.category = (("Temp_"+self.category))
         temp.tree = self.tree
         temp.parent = self.parent
         temp.vectorCount = self.vectorCount
@@ -171,6 +175,7 @@ class COBWEBNode(object):
     ##Returns the newly created child node           
     def newcategory(self,featureVector):
         newChild = COBWEBNode()
+        
         newChild.vectorCount = 1
         for feature,value in featureVector: #remember featureVector is a list of pairs
             newChild.featureCount[feature][value] = 1 
@@ -179,6 +184,7 @@ class COBWEBNode(object):
         newChild.tree = self.tree
 
         self.children.append(newChild)
+        newChild.category = ((self.category) + str(self.children.index(newChild)))
 
         return newChild
 
@@ -209,6 +215,7 @@ class COBWEBNode(object):
         #From the paper, merging nodes is creating a new node, and summing the attribute-value counts of the nodes being merged,
         # the original nodes are made children of the newly created node. pg.151,152
         newNode = COBWEBNode()
+        newNode.category = ""
         newNode.parent = self
         newNode.tree = self.tree
 
