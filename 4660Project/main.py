@@ -9,6 +9,8 @@ import igraph
 from igraph import *
 
 
+
+
 #Used to create a HTML graph of the tree produced by the COBWEB tree,
 #Input is the  Tree
 def makeTreeGraphCOBWEB(cobwebTree):
@@ -43,6 +45,23 @@ def makeTreeGraphCOBWEB(cobwebTree):
         Ye+=[2*M-position[edge[0]][1],2*M-position[edge[1]][1], None]
 
     labels = v_label
+
+    #Used for adding the annotation style to the nodes in our display tree
+    def make_annotations(pos, text, font_size=10, font_color='rgb(250,250,250)'):
+            L=len(pos)
+            if len(text)!=L:
+                raise ValueError('The lists pos and text must have the same len')
+            annotations = go.Annotations()
+            for k in range(L):
+                annotations.append(
+                    go.Annotation(
+                        text=text[k], # or replace labels with a different list for the text within the circle  
+                        x=pos[k][0], y=2*M-position[k][1],
+                        xref='x1', yref='y1',
+                        font=dict(color=font_color, size=font_size),
+                        showarrow=False)
+                )
+            return annotations
 
     
 
@@ -87,7 +106,7 @@ def makeTreeGraphCOBWEB(cobwebTree):
     data=go.Data([lines, dots])
     fig=dict(data=data, layout=layout)
     fig['layout'].update(annotations=make_annotations(position, v_label))
-    plotly.offline.plot(fig, filename='Tree-Reingold-Tilf.html')
+    plotly.offline.plot(fig, filename='Tree-COBWEB.html')
 
 #Create 12 sets of 1001 sample queries, each query is a list (feature vector) where each sub-list is an atom (attribute,op,value)
 def CreateSets():
@@ -105,6 +124,15 @@ def CreateSets():
         ret[i] = QS.querySet
     return ret
 
+
+
+#########################################################
+#
+#
+#                    BODY
+#
+#
+#########################################################
 qsets = CreateSets()
 reformattedSet = list()
 
@@ -132,23 +160,8 @@ for atom in reformattedSet[11]:
     treeprint = (cobwebTree.root.pretty_print(0))
     print(treeprint)
 
-def make_annotations(pos, text, font_size=10, font_color='rgb(250,250,250)'):
-        L=len(pos)
-        if len(text)!=L:
-            raise ValueError('The lists pos and text must have the same len')
-        annotations = go.Annotations()
-        for k in range(L):
-            annotations.append(
-                go.Annotation(
-                    text=labels[k], # or replace labels with a different list for the text within the circle  
-                    x=pos[k][0], y=2*M-position[k][1],
-                    xref='x1', yref='y1',
-                    font=dict(color=font_color, size=font_size),
-                    showarrow=False)
-            )
-        return annotations
 
-
+makeTreeGraphCOBWEB(cobwebTree)
 
 
 print("hello")

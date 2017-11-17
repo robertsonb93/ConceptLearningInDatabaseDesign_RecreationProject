@@ -31,14 +31,14 @@ class COBWEBTree(object):
                     else:
                         self.root = newParent #If there was no parent, newParent is the new root to the tree
 
-                break;
+                return;
      
             else:#This root is not a leaf node.
-                root.insert(featureVector) #update this roots statistics
-                notSingleChild = len(root.children) > 1
-                    
+                
+                notSingleChild = len(root.children) > 1                  
                 bestChild = root.children[0]
-                if notSingleChild: #Only enter if we arent eh only child
+
+                if notSingleChild: #Only enter if we arent the only child
                     bestChild2 = root.children[1]
                     bestCU = 0 
                     bestCU2 = 0
@@ -54,8 +54,6 @@ class COBWEBTree(object):
                             bestChild2 = child
                     mergeCU = root.getMergeCU(bestChild,bestChild2)
 
-                    break#We have done all we can with this new feature vector
-
                 else:#We have only a single child, so cant check for merging, and the best child CU is the only child CU
                     mergeCU = 0
                     bestCU = root.getCUInserted(bestChild,featureVector)
@@ -69,18 +67,21 @@ class COBWEBTree(object):
                 maxVar = max(d,key=d.get)#find the key with the max value
            
                 if maxVar == "newCatCU":
+                    root.insert(featureVector) #update this roots statistics
                     newchild = root.newcategory(featureVector)
-                    break; #we created a new child for this feature vector, so we dont need to do anything further with it
+                    return; #we created a new child for this feature vector, so we dont need to do anything further with it
                 elif maxVar == "mergeCU":
+                    root.insert(featureVector) #update this roots statistics
                     newnode = root.merge(bestChild,bestChild2)
                     root = newnode #We will then restart the while loop with this as the new root
                 elif maxVar == "splitCU":               
                     root.split(bestChild) # we will restart the loop with the same root                   
                 elif maxVar == "passOnCU":
+                    root.insert(featureVector) #update this roots statistics
                     root = bestChild # we will restart the loop with bestchild as root, and eval if their is a better fit in best child's children
                 else:
                     print(("SomeThing wen wrong and maxVar was not determined to match : maxVar = " + maxVar))
-                    break;
+                    return;
 
 
 
