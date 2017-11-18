@@ -20,17 +20,24 @@ class COBWEBTree(object):
                 
 
                 else: #else its not a match or the first entry
-                    newParent = root.__makeCopy__() #create a clone of root, this would be a bug if we didnt check len of children first
-                    newParent.insert(featureVector) #Modify roots clone
-                    root.parent = newParent #root now the child of roots modified clone
-                    newParent.children.append(root)
-                    newParent.newcategory(featureVector) #create a sibling leaf for new novel featureVector
+                    #newParent = root.__makeCopy__() #create a clone of root, this would be a bug if we didnt check len of children first
+                    newChild = root.__makeCopy__()
+                    #newParent.insert(featureVector) #Modify roots clone
+                    root.insert(featureVector)
+                    #root.parent = newParent #root now the child of roots modified clone
+                    newChild.parent = root
+                    #newParent.children.append(root)
+                    root.children.append(newChild)
+                    #newParent.newcategory(featureVector) #create a sibling leaf for new novel featureVector
+                    root.newcategory(featureVector)
 
-                    if not(newParent.parent == None): #True : newParent is an internal node (not tree root)
-                        newParent.parent.children.remove(root) #remove root from its ex-parent
-                        newParent.parent.children.append(newParent) #Tell the newParent that is has a new child
-                    else:
-                        self.root = newParent #If there was no parent, newParent is the new root to the tree
+                    #if not(newParent.parent == None): #True : newParent is an internal node (not tree root)
+                    #    newParent.parent.children.remove(root) #remove root from its ex-parent
+                    #    newParent.parent.children.append(newParent) #Tell the newParent that is has a new child
+                    #if not(root.parent == None):
+                       
+                    #else:
+                    #    self.root = newParent #If there was no parent, newParent is the new root to the tree
 
                 return;
      
@@ -106,7 +113,7 @@ class COBWEBNode(object):
         self.tree = None
 
     def nameFromInfo(self):
-        name = "<br>Features: \n<br>"
+        name = "Features: \n<br>"
         for attr in self.featureCount:
             name += str(attr) + "{ "
             for val in self.featureCount[attr]:
@@ -119,7 +126,7 @@ class COBWEBNode(object):
     #utility function to create a duplicate of the given node
     def __makeCopy__(self):        
         temp = COBWEBNode()
-        temp.category = (("copy_"+self.category))
+        temp.category = self.category
         temp.tree = self.tree
         temp.parent = self.parent
         temp.vectorCount = self.vectorCount
