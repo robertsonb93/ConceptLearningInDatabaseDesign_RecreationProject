@@ -17,32 +17,37 @@ def makeTreeGraphCOBWEB(cobwebTree):
     #lets use Igraph to set up the tree, we can then use plotly to display what the tree looks like
     #Count number of vertices in the tree
     vertices = deque()
-    vertices.appendleft(cobwebTree.root)
-    nr_vertices = 1
-    v_label = [cobwebTree.root.category]
+    nr_vertices = 0
+    vertices.appendleft((cobwebTree.root,nr_vertices))
+    v_label = [cobwebTree.root.category + cobwebTree.root.nameFromInfo()]
+    G = Graph()
+    G.add_vertices(1) #add a single vertex to the graph for the root
     while len(vertices):
-              curr = vertices.popleft()
+              (curr,currNumber) = vertices.popleft()
               for child in curr.children:
-                    vertices.append(child)
                     nr_vertices +=1
+                    vertices.append((child,nr_vertices))
+                    G.add_vertices(1)
+                    G.add_edges([(currNumber,nr_vertices)])#create an edge from the parent (curr) to the child(the latest vertice added)                   
                     child.category = child.category + child.nameFromInfo()
                     v_label.append(child.category)
 
-    G = Graph.Tree(nr_vertices, 3)
-    lay = G.layout('rt')
-    position = {k: lay[k] for k in range(nr_vertices)}
+    lay = G.layout('rt',root = [0])#sets the layout to reingold tilford
+
+    #lay = G.layout_reingold_tilford(mode="in", root=0)
+    position = {k: lay[k] for k in range(nr_vertices+1)}
     Y = [lay[k][1] for k in range(nr_vertices)]
     M = max(Y)  
     es = EdgeSeq(G)#Sequence of edges
     E = [e.tuple for e in G.es] # list of edges
     L = len(position)
-    Xn = [position[k][0] for k in range(L)]
-    Yn = [(2*M-position[k][1]) for k in range (L)]
+    Xn = [position[k][0] for k in range(L)]#getting the positions for the X locations
+    Yn = [(2*M-position[k][1]) for k in range (L)]#getting the positions for Y locations
     Xe = []
     Ye = []
 
     for edge in E:
-        Xe+=[position[edge[0]][0],position[edge[1]][0], None]
+        Xe+=[position[edge[0]][0],position[edge[1]][0], None]#seems to be the start-end for each edge 
         Ye+=[2*M-position[edge[0]][1],2*M-position[edge[1]][1], None]
 
     labels = v_label
@@ -134,6 +139,8 @@ def CreateSets():
 #
 #
 #########################################################
+
+
 qsets = CreateSets()
 reformattedSet = list()
 
@@ -159,7 +166,7 @@ cobwebTree = COBWEBTree()
 for atom in reformattedSet[0]:
     cobwebTree.cobweb(atom)
     treeprint = (cobwebTree.root.pretty_print(0))
-    print(treeprint)
+    #print(treeprint)
 
 
 makeTreeGraphCOBWEB(cobwebTree)

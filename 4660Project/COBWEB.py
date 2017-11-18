@@ -108,8 +108,11 @@ class COBWEBNode(object):
     def nameFromInfo(self):
         name = "Features: \n"
         for attr in self.featureCount:
+            name += str(attr) + "{ "
             for val in self.featureCount[attr]:
                 name += str(val) + "\n"
+
+            name += "}"
         name += "Vectors Seen: " + str(self.vectorCount)
         return name
 
