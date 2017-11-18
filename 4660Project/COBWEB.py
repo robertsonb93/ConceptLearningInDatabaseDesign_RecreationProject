@@ -22,7 +22,7 @@ class COBWEBTree(object):
                     newChild = root.__makeCopy__()#create a clone of ourself 
                     root.insert(featureVector)#insert the new featurevector information, we now know more features than our clone
                     newChild.parent = root
-                    root.children.append(newChild)#make the clone a child now
+                    root.children.append(newChild)#make the clone a child
                     root.newcategory(featureVector)#create the clones sibling to hold the new features 
                 return;
      
@@ -45,7 +45,7 @@ class COBWEBTree(object):
                             bestCU2 = cu
                             bestChild2 = child
                     if(bestChild == bestChild2):
-                        print("Dupolicate children")
+                        print("Duplicate children")
                     mergeCU = root.getMergeCU(bestChild,bestChild2)
 
                 else:#We have only a single child, so cant check for merging, and the best child CU is the only child CU
@@ -68,7 +68,8 @@ class COBWEBTree(object):
                     root.insert(featureVector) #update this roots statistics
                     newnode = root.merge(bestChild,bestChild2)
                     root = newnode #We will then restart the while loop with this as the new root
-                elif maxVar == "splitCU":               
+                elif maxVar == "splitCU":
+                    #root.insert(featureVector) #Not sure if i should use this or not. using it repeatedly would imply that we have seen the same vector repeatedly. But we havent
                     root.split(bestChild) # we will restart the loop with the same root                   
                 elif maxVar == "passOnCU":
                     root.insert(featureVector) #update this roots statistics

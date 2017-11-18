@@ -37,7 +37,7 @@ class QSet(object):
             featureVec = list()
             attribute = "actno"
             operation = "="
-            value = rand.randint(1000,9999) #These are magic, but i figured its a healthy range for the RNG
+            value = rand.randint(1000,1100) #These are magic, but i figured its a healthy range for the RNG
             featureVec += [[attribute,operation,value]]
                 
             #Find the bal 
@@ -151,7 +151,7 @@ class QSet(object):
             #Get withdrawals of more than x, we dont have strictly greater then, so add a 1 to x, but we are using RNG, so it doesnt matter anyways.
             attribute = "bal_change"
             operation = "<="
-            value = rand.randint(-1000,0)
+            value = rand.randint(-100,0)
             featureVec += [[attribute,operation,value]]
 
             #get the matching account, this is a join
@@ -190,7 +190,7 @@ class QSet(object):
             #Find all that are greater then x
             attribute = "bal_change"
             operation = "<="
-            minValue = rand.randint(-1000,0)
+            minValue = rand.randint(-100,0)
             featureVec += [[attribute,operation,minValue]]
                
             #Find those that are then less then y
@@ -234,7 +234,7 @@ class QSet(object):
             #Find all accounts balances greater then x
             attr = "bal"
             op = ">=" 
-            value = rand.randint(0,1000000)#1million
+            value = rand.randint(0,100)#1million
             featureVec += [[attr,op,value]]
 
             #Find the customers now, a join
@@ -262,7 +262,7 @@ class QSet(object):
             #Find all accounts balanaces greater then x
             attr = "bal"
             op = ">=" 
-            value = rand.randint(0,1000000)#1million
+            value = rand.randint(0,100)#1million
             featureVec += [[attr,op,value]]
 
             #Find the customers now, This is a join
@@ -296,7 +296,7 @@ class QSet(object):
             #Find all accounts balanaces greater then x
             attr = "bal"
             op = ">=" 
-            value = rand.randint(0,1000000)#1million
+            value = rand.randint(0,100)#1million
             featureVec += [[attr,op,value]]
 
             #Find the customers now, This is a join
@@ -329,7 +329,7 @@ class QSet(object):
             #Find all accounts balanaces greater then x
             attr = "bal"
             op = ">=" 
-            value = rand.randint(0,1000000)#1million
+            value = rand.randint(0,100)
             featureVec += [[attr,op,value]]
 
             #Find the customers now, This is a join
@@ -361,7 +361,7 @@ class QSet(object):
             #Find all accounts balanaces greater then x
             attr = "bal"
             op = ">=" 
-            value = rand.randint(0,1000000)#1million
+            value = rand.randint(0,100)#1million
             featureVec += [[attr,op,value]]
 
             #Find the transactions on those accounts, join
@@ -398,7 +398,7 @@ class QSet(object):
             #Find all accounts balanaces greater then x
             attr = "bal"
             op = ">=" 
-            value = rand.randint(0,1000000)#1million
+            value = rand.randint(0,100)
             featureVec += [[attr,op,value]]
 
             #Find the transactions on those accounts, join
@@ -440,7 +440,7 @@ class QSet(object):
             #Find all accounts balanaces greater then x
             attr = "bal"
             op = ">=" 
-            value = rand.randint(0,1000000)#1million
+            value = rand.randint(0,100)
             featureVec += [[attr,op,value]]
 
             #Find the transactions on those accounts, join
