@@ -16,29 +16,14 @@ class COBWEBTree(object):
 
             if not len(root.children): #If dont have any children (aka a leaf) #This is BASE CASE
                 if root.featureVectorsMatch(featureVector) or root.vectorCount == 0: #if the featureVector is an exact match for the leaf node, or it is the first time entering 
-                    root.insert(featureVector)#Then just update the values for this node
-                
+                    root.insert(featureVector)#Then just update the values for this node               
 
-                else: #else its not a match or the first entry
-                    #newParent = root.__makeCopy__() #create a clone of root, this would be a bug if we didnt check len of children first
-                    newChild = root.__makeCopy__()
-                    #newParent.insert(featureVector) #Modify roots clone
-                    root.insert(featureVector)
-                    #root.parent = newParent #root now the child of roots modified clone
+                else: #else its not a match or the first entry, so we need to create a new child to represent this feature vector
+                    newChild = root.__makeCopy__()#create a clone of ourself 
+                    root.insert(featureVector)#insert the new featurevector information, we now know more features than our clone
                     newChild.parent = root
-                    #newParent.children.append(root)
-                    root.children.append(newChild)
-                    #newParent.newcategory(featureVector) #create a sibling leaf for new novel featureVector
-                    root.newcategory(featureVector)
-
-                    #if not(newParent.parent == None): #True : newParent is an internal node (not tree root)
-                    #    newParent.parent.children.remove(root) #remove root from its ex-parent
-                    #    newParent.parent.children.append(newParent) #Tell the newParent that is has a new child
-                    #if not(root.parent == None):
-                       
-                    #else:
-                    #    self.root = newParent #If there was no parent, newParent is the new root to the tree
-
+                    root.children.append(newChild)#make the clone a child now
+                    root.newcategory(featureVector)#create the clones sibling to hold the new features 
                 return;
      
             else:#This root is not a leaf node.
@@ -143,7 +128,7 @@ class COBWEBNode(object):
     def featureVectorsMatch(self,featureVector):
         for a,b in featureVector: #a Feature vec is a single atom, and each atom contains a list of pairs
             if b not in self.featureCount[a]:
-                    print(("Doesnt match any keys "+b + " in feature " + a))
+                    print(("Doesnt match any keys "+str(b) + " in feature " + str(a)))
                     return False           
         return True
 
@@ -215,17 +200,13 @@ class COBWEBNode(object):
     #used to show that a feature vector has been seen by the node
     #updates the number of unique features that this node has seen and updates the feature counts it has seen
     def insert(self,featureVector):
-        isunique = False
         for feature,value in featureVector:                       
             if value in self.featureCount[feature]:
-                isunique =True #Put this here for debugging purposed TODO: consider that this needs to be removed
                 self.featureCount[feature][value] += 1
             else:
-                isunique = True #One of the feature values in the atom was different thus it is a novel atom to see
                 self.featureCount[feature][value] = 1
-            
-        if isunique: #For the feature vector, check if it is novel, if it is then insert it
-            self.vectorCount += 1
+
+        self.vectorCount += 1
 
     #It has been determined the CU for having these two child nodes would be improved if they became the same node
     #Merging two nodes means replacing them by a node whose children is the union of the original nodes' sets of children
