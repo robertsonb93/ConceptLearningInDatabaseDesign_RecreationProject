@@ -53,7 +53,7 @@ def makeTreeGraphCOBWEB(cobwebTree):
     labels = v_label
 
     #Used for adding the annotation style to the nodes in our display tree
-    def make_annotations(pos, text, font_size=10, font_color='rgb(250,250,250)'):
+    def make_annotations(pos, text, font_size=10, font_color='rgb(1,1,1)'):
             L=len(pos)
             if len(text)!=L:
                 raise ValueError('The lists pos and text must have the same len')
@@ -98,7 +98,7 @@ def makeTreeGraphCOBWEB(cobwebTree):
                 showticklabels=False,
                 )
 
-    layout = dict(title= 'Tree with Reingold-Tilford Layout',
+    layout = dict(title= 'COBWEB Tree',
                   annotations=make_annotations(position, v_label),
                   font=dict(size=12),
                   showlegend=False,
