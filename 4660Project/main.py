@@ -1,6 +1,7 @@
 from QSet import *
 from COBWEB import *
-
+import time
+import matplotlib.pyplot as plt
 from collections import deque
 
 import plotly
@@ -130,7 +131,17 @@ def CreateSets():
         ret[i] = QS.querySet
     return ret
 
-
+def countHierarchy(root):
+    count = 0
+    nodeQueue = deque()
+    nodeQueue.append(root)
+    while len(nodeQueue):
+        count += 1#Count the node when we remove it.
+        active = nodeQueue.popleft()
+        for child in active.children:
+            nodeQueue.append(child)
+    return count
+    
 
 #########################################################
 #
@@ -162,18 +173,102 @@ for qset in qsets:#get a specific set of queries
 
 
 
-cobwebTree = COBWEBTree()
-count =0
-for query in reformattedSets[11]:
-    count +=1
-    for atom in query:
-        cobwebTree.cobweb(atom)
-        #treeprint = (cobwebTree.root.pretty_print(0)) #use if you want a text output of the tree
-        
-    print(("Iteration : " +str(count)))
+setCount = -1
+level1Nodes = list()
+level2Nodes = list()
+procTime = list()
+hierarchySize = list()
+for set in reformattedSets:
+    
+    cobwebTree = COBWEBTree()
+    level1Nodes.append(list())
+    level2Nodes.append(list())
+    
+    hierarchySize.append(list())
+    setCount += 1#which set we are currently on
+    procTime.append(time.time())#Start the timer for running processing this query set
+    count =0#How many queries we have processed this set
+    for query in set:
+        count +=1
+        for atom in query:
+            cobwebTree.cobweb(atom)            
+        print(("Set: "+str(setCount) + "/12 - Iteration: " +str(count)))
+        hierarchySize[setCount].append(countHierarchy(cobwebTree.root)) #done at each query
+
+    #We finished building the tree, lets do some statistics on it. 
+    #get the first/second level after the root.
+    procTime[setCount] -= time.time()
+    for nodes in cobwebTree.root.children:
+        level1Nodes[setCount].append(nodes)
+        for lvl2 in nodes.children:
+            level2Nodes[setCount].append(lvl2)
+
+    
+
+    #makeTreeGraphCOBWEB(cobwebTree)#Display the tree we created
+#compare how many nodes had atleast 1 matching node on layer 1
+
+def findSameDiff(nodeList):
+    matches = 0
+    different = 0
+    for set in range(len(nodeList)):#Do for every node on the first level of its tree
+        for active in nodeList[set]:
+            MatchNothing = True #Assume it matches nothing (is a unique concept)
+            for setPrime in range(len(nodeList)): #for every other node
+                if(setPrime != set):#Not from our current tree
+                    for comparee in nodeList[setPrime]:
+                        DoesMatch = True #Assume that the active node matches the comparee node
+                        for feature in active.featureCount:#Iterate the features they learned.
+                            for val in active.featureCount[feature]:
+                                if(val not in comparee.featureCount[feature]):
+                                    DoesMatch = False
+                                    break;
+                        if(DoesMatch):
+                            MatchNothing = False
+                            matches += 1
+                            nodeList[setPrime].remove(comparee)#So we dont double count it.
+                else:
+                    continue
+            if(MatchNothing):
+                different += 1
+            nodeList[set].remove(active)#So we dont double count this.
+    return [matches,different]
+
+[matches1,different1] = findSameDiff(level1Nodes)
+[matches2,different2] = findSameDiff(level2Nodes)
+print(("Number of Same LVL1: " + str(matches1)))
+print(("Number of Different LVL1: "+ str(different1)))
+print(("Number of Same LVL2: " + str(matches2)))
+print(("Number of Different LVL2: "+ str(different2)))
+
+print(("Times for Eval: "))
+print(procTime)
+x_points = [x for x in range(len(reformattedSets))]
+
+plt.bar(x_points,[y*-1 for y in procTime],1/1.5)
+plt.xlabel('QuerySet')
+plt.ylabel('Time(Seconds)')
+plt.show()#Plot the time it took
 
 
-makeTreeGraphCOBWEB(cobwebTree)
+avg = list([0] * 1001) # init to the length of number of queries
 
+x_points = [i for i in range(1001)]
+for i in range(len(hierarchySize)):
+    if i == 0 or i == 1:
+        y_points = list()#fill with the heiarchies we collected
+        for h in hierarchySize[i]:
+            y_points.append(h)
+        plt.plot(x_points,y_points)
+    else:
+        count = 0
+        for h in range(len(hierarchySize[i])):
+            avg[h] += (hierarchySize[i][h] / 10)#to average it
+
+plt.plot(x_points,avg)
+plt.xlabel('Queries')
+plt.ylabel('Hierarchy Size')
+plt.legend(['QSet1','QSet2','QSet3-12(avg)'],loc = 'upper left')
+plt.show()
 
 print("hello")

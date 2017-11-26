@@ -1,4 +1,5 @@
 from collections import defaultdict
+import random
 
 class COBWEBTree(object):
    #Is the actual classfication tree
@@ -20,20 +21,22 @@ class COBWEBTree(object):
 
                 else: #else its not a match or the first entry, so we need to create a new child to represent this feature vector
                     newChild = root.__makeCopy__()#create a clone of ourself 
-                    root.insert(featureVector)#insert the new featurevector information, we now know more features than our clone
                     newChild.parent = root
                     root.children.append(newChild)#make the clone a child
+                    root.insert(featureVector)#insert the new featurevector information, we now know more features than our clone                                       
                     root.newcategory(featureVector)#create the clones sibling to hold the new features 
+
                 return;
      
-            else:#This root is not a leaf node.
+            else:#This root is not a leaf node.    
                 
                 notSingleChild = len(root.children) > 1                  
                 bestChild = root.children[0]
+                mergeCU=0
                 if notSingleChild: #Only enter if we arent the only child
                     bestChild2 = root.children[1]
-                    bestCU = 0 # we can use zero, because a negative value implies that the child has seen something the parent hasnt, which isnt possible (without bugs)
-                    bestCU2 = 0
+                    bestCU = -9999
+                    bestCU2 = -9999
                     for child in root.children:#Find the children with the best CU if the feature vector went to them
                         cu = root.getCUInserted(child,featureVector)
                         if (bestCU < cu):
@@ -46,19 +49,36 @@ class COBWEBTree(object):
                             bestChild2 = child
                     if(bestChild == bestChild2):
                         print("Duplicate children")
-                    mergeCU = root.getMergeCU(bestChild,bestChild2)
+                    else:
+                        mergeCU = root.getMergeCU(bestChild,bestChild2,featureVector)
 
                 else:#We have only a single child, so cant check for merging, and the best child CU is the only child CU
-                    mergeCU = 0
                     bestCU = root.getCUInserted(bestChild,featureVector)
 
                 #Now we need to find what the CU would be for three different actions, and pick the best action
                 newCatCu = root.getCUNewCategory(featureVector) #Get the CU for if we just make a new child from the recor            
-                splitCU = root.getSplitCU(bestChild)
-                #passOnCU = root.getCobwebCU(bestChild,featureVector) #this is related to CUInserted for the best child
+                splitCU = root.getSplitCU(bestChild,featureVector)
+
+                #if(mergeCU < 0):
+                #    root.getMergeCU(bestChild,bestChild2,featureVector)
+                #if(bestCU < 0):
+                #    root.getCUInserted(bestChild,featureVector)
+                #if(newCatCu < 0):
+                #    root.getCUNewCategory(featureVector)
+                #if(splitCU < 0):
+                #    splitCU = root.getSplitCU(bestChild,featureVector)
 
                 d = {"newCatCU" : newCatCu, "mergeCU" : mergeCU, "splitCU" : splitCU, "passOnCU" : bestCU} #Create a dictionary with the operations and their values
                 maxVar = max(d,key=d.get)#find the key with the max value
+                maxVal = d[maxVar]
+                #We need a tie breaker, else you can end up recursively calling the same function over and over again (merge does this)
+                maxList = list()
+                maxList.append(maxVar)
+                for k in d:
+                    if(maxVar != k and maxVal == d[k]):
+                        maxList.append(k)
+
+                maxVar = random.choice(maxList)
 
                 if maxVar == "newCatCU":
                     root.insert(featureVector) #update this roots statistics
@@ -66,7 +86,7 @@ class COBWEBTree(object):
                     return; #we created a new child for this feature vector, so we dont need to do anything further with it
                 elif maxVar == "mergeCU":
                     root.insert(featureVector) #update this roots statistics
-                    newnode = root.merge(bestChild,bestChild2)
+                    newnode = root.merge(bestChild,bestChild2,featureVector)
                     root = newnode #We will then restart the while loop with this as the new root
                 elif maxVar == "splitCU":
                     #root.insert(featureVector) #Not sure if i should use this or not. using it repeatedly would imply that we have seen the same vector repeatedly. But we havent
@@ -129,7 +149,7 @@ class COBWEBNode(object):
     def featureVectorsMatch(self,featureVector):
         for a,b in featureVector: #a Feature vec is a single atom, and each atom contains a list of pairs
             if b not in self.featureCount[a]:
-                    print(("Doesnt match any keys "+str(b) + " in feature " + str(a)))
+                    #print(("Doesnt match any keys "+str(b) + " in feature " + str(a)))
                     return False           
         return True
 
@@ -156,9 +176,10 @@ class COBWEBNode(object):
 
         
         conditionalProbabilities = list()
+        
         for child in self.children:
             partialSum = 0
-            for feature in child.featureCount: #remember that feature is a key to another dictionary
+            for feature in child.featureCount: #remember that feature is a key to another dictionary               
                 for val in child.featureCount[feature]:
                     count  = child.featureCount[feature][val]
                     partialSum += (count / child.vectorCount)**2
@@ -171,7 +192,7 @@ class COBWEBNode(object):
             for val in self.featureCount[feature]:
                 count  = self.featureCount[feature][val]
                 unconditional_probability += (count / self.vectorCount)**2
-        
+
         #step Four is to finish the first summation, ands combine the terms,
         #sum += step1 * (step2 - step3)
         #and then do the division from the beginning of the formula
@@ -215,7 +236,7 @@ class COBWEBNode(object):
     #https://github.com/cmaclell/concept_formation/blob/master/concept_formation/cobweb.py
     #http://axon.cs.byu.edu/~martinez/classes/678/Papers/Fisher_Cobweb.pdf
     ##Returns the newly created child node
-    def merge(self,bestChild,bestChild2):
+    def merge(self,bestChild,bestChild2,featureVector):
         #From the paper, merging nodes is creating a new node, and summing the attribute-value counts of the nodes being merged,
         # the original nodes are made children of the newly created node. pg.151,152
         newNode = COBWEBNode()
@@ -226,6 +247,7 @@ class COBWEBNode(object):
         #Take the counts from the merging children
         newNode.vectorCount += bestChild.vectorCount #update counts from the children
         newNode.vectorCount += bestChild2.vectorCount
+
         for feature in bestChild.featureCount:
             for value in bestChild.featureCount[feature]:
                 newNode.featureCount[feature][value] = bestChild.featureCount[feature][value] #Copy all the feature counts from the best child into our new node
@@ -235,7 +257,8 @@ class COBWEBNode(object):
                 if value not in newNode.featureCount[feature]:
                     newNode.featureCount[feature][value] = 0#If the feature was not in bestChild, then it is set to zero in newnode, 
                 newNode.featureCount[feature][value] += bestChild2.featureCount[feature][value] #The feature is then incremented by the count from bestChild2   
-                   
+             
+        newNode.insert(featureVector)
         #The merging nodes are made into children of the new node
         bestChild.parent = newNode
         bestChild2.parent = newNode
@@ -270,6 +293,8 @@ class COBWEBNode(object):
         tempChild.tree = temp.tree  #I dont think setting the parent is needed. TODO      
 
         temp.children.append(tempChild)
+
+        temp.insert(featureVector)
         tempChild.insert(featureVector)
 
         cu = temp.categoryUtility()
@@ -279,26 +304,31 @@ class COBWEBNode(object):
     #Get the CU if we just make a new child from the featureVector
     def getCUNewCategory(self,featureVector):
         temp = self.__makeCopy__()
+        temp.insert(featureVector)
+        temp.newcategory(featureVector)
 
-        tempChild = COBWEBNode()
-        tempChild.parent = temp  # I dont think we need to set who the parent actually is. TODO 
-        tempChild.tree = temp.tree #I dont think setting the parent is needed. TODO       
-        tempChild.insert(featureVector)
+        #tempChild = COBWEBNode()
+        #tempChild.parent = temp  # I dont think we need to set who the parent actually is. TODO 
+        #tempChild.tree = temp.tree #I dont think setting the parent is needed. TODO       
 
-        temp.children.append(tempChild)
+        #temp.insert(featureVector)
+        #tempChild.insert(featureVector)
+
+        #temp.children.append(tempChild)
 
         cu = temp.categoryUtility()
         return cu
 
 
     #Get the category_utility for the merge of the 2 best children
-    def getMergeCU(self,bestChild,bestChild2):
+    def getMergeCU(self,bestChild,bestChild2,featureVector):
          #We will create temps of the bestchildren, and the the root (self)
 
          #Create out self copy, but remove the bestChildren from its children, they will be re added as temps
          tempSelf = self.__makeCopy__()
          tempSelf.children.remove(bestChild)
          tempSelf.children.remove(bestChild2)
+         tempSelf.insert(featureVector)
 
          #Create the temporary best children, but set the parent to the tempself (would have been self)
          tempBC = bestChild.__makeCopy__()
@@ -313,17 +343,18 @@ class COBWEBNode(object):
          tempSelf.children.append(tempBC2)
 
          #Merge the temp nodes together,so we can calculate the category utility on them.
-         tempSelf.merge(tempBC,tempBC2)
+         tempSelf.merge(tempBC,tempBC2,featureVector)
          
          cu = tempSelf.categoryUtility()
          return cu
 
     #Get the category_utility for splitting the best child
-    def getSplitCU(self,bestChild):
+    def getSplitCU(self,bestChild,featureVector):
 
          #create a temp node as a copy of our current, we will then avoid adding the best child to it, but will add the bestChild children
          temp = self.__makeCopy__()
          temp.children.remove(bestChild)#Remove the best child from the temps children
+        # temp.insert(featureVector)
          
          for child in bestChild.children:
                  temp_child = child.__makeCopy__()
